@@ -75,18 +75,55 @@ base_template = """
 # Route 1: Home Page (Dynamic Time)
 @application.route('/')
 def home():
-    now = datetime.datetime.now(datetime.timezone.utc)
-    time_str = now.strftime("%Y-%m-%d %H:%M:%S UTC")
+    ist = timezone(timedelta(hours=5, minutes=30))
+    now = datetime.datetime.now(ist)
+    time_str = now.strftime("%Y-%m-%d %H:%M:%S IST")
     
     # This is the HTML content for the home page
     home_content = f"""
-        <h1>Welcome to the Lab Exam App!</h1>
-        <p>This is a dynamic web application showing the current server time.</p>
-        <p class="time"><strong>Current Server Time:</strong> {time_str}</p>
-        <hr>
-        <p>Please provide your student feedback:</p>
-        <a href="/feedback" class="btn">Go to Feedback Form</a>
-    """
+    <h1>Welcome to the Lab Exam App!</h1>
+    <p>This is a dynamic web application showing the current server time.</p>
+    <p class="time">
+        <strong>Current Server Time:</strong> 
+        <span id="ist-time">{time_str}</span>
+    </p>
+    <script>
+        // Get the initial time string from the server
+        let timeString = "{time_str}";
+        // Parse it into a JS Date object (adjust for IST offset)
+        let initialDate = new Date();
+        // The server gives IST, so let's re-parse it
+        let parts = timeString.split(' ');
+        let dateParts = parts[0].split('-');
+        let timeParts = parts[1].split(':');
+        // JS Date: new Date(year, month-1, day, hour, minute, second)
+        initialDate = new Date(
+            Number(dateParts[0]), 
+            Number(dateParts[1])-1, 
+            Number(dateParts[2]), 
+            Number(timeParts[0]), 
+            Number(timeParts[1]), 
+            Number(timeParts[2])
+        );
+
+        function pad(n) { return n < 10 ? '0' + n : n; }
+
+        function updateISTTime() {
+            initialDate.setSeconds(initialDate.getSeconds() + 1);
+            let y = initialDate.getFullYear();
+            let m = pad(initialDate.getMonth()+1);
+            let d = pad(initialDate.getDate());
+            let h = pad(initialDate.getHours());
+            let min = pad(initialDate.getMinutes());
+            let s = pad(initialDate.getSeconds());
+            document.getElementById('ist-time').textContent = `${y}-${m}-${d} ${h}:${min}:${s} IST`;
+        }
+        setInterval(updateISTTime, 1000);
+    </script>
+    <hr>
+    <p>Please provide your student feedback:</p>
+    <a href="/feedback" class="btn">Go to Feedback Form</a>
+"""
     # We render the base template and inject our home_content into it
     return render_template_string(base_template, content=home_content)
 
